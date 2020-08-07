@@ -18,7 +18,7 @@
             "metadata": {
                 "description": "Address Space for the Virtual Network. Only used if vnet does not exist."
             },
-            "defaultValue": ["10.10.10.0/24"]
+            "defaultValue": [ "10.10.10.0/24" ]
         },
         "location": {
             "type": "string",
@@ -33,17 +33,12 @@
         "virtualNetworkName": "[if(equals('default', parameters('virtualNetworkName')),concat('vn-', variables('baseName')),parameters('virtualNetworkName'))]",
         "subnetName": "[if(equals('default', parameters('subnetName')),concat('sn-', variables('baseName')),parameters('subnetName'))]",
         "virtualNetworkResId": "[resourceId('Microsoft.Network/virtualnetworks', variables('virtualNetworkName'))]",
-        "subnetResId": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('virtualNetworkName'),variables('subnetName'))]",
-        "gitHubOwner": "tescales",
-        "gitHubRepo": "azure-multivm-domainjoin",
-        "remoteTemplate": "[if(contains(deployment().properties, 'templateLink'),bool('true'),bool('false'))]",
-        "remoteUri": "[if(variables('remoteTemplate'), deployment().properties.templateLink.uri, concat('https://raw.githubusercontent.com/', variables('gitHubOwner'), '/', variables('gitHubRepo'), '/master/'))]",
-        "utilTemplateUri": "[uri(variables('remoteUri'),'util/azuredeploy.json')]"
+        "subnetResId": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('virtualNetworkName'),variables('subnetName'))]"
     },
     "resources": [
-        
+
         {
-            
+
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2017-09-01",
             "name": "[variables('virtualNetworkName')]",
@@ -57,7 +52,7 @@
             }
         },
         {
-            
+
             "type": "Microsoft.Network/virtualNetworks/subnets",
             "apiVersion": "2019-09-01",
             "name": "[concat(variables('virtualNetworkName'), '/', variables('subnetName'), copyIndex())]",
@@ -75,7 +70,7 @@
         }
     ],
     "outputs": {
-         "vNetResId": {
+        "vNetResId": {
             "type": "string",
             "value": "[variables('virtualNetworkResId')]"
         },
@@ -83,5 +78,5 @@
             "type": "string",
             "value": "[variables('virtualNetworkName')]"
         }
-  }
+    }
 }
