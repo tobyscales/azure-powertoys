@@ -76,6 +76,10 @@
         "vNetName": {
             "type": "string",
             "value": "[variables('virtualNetworkName')]"
+        },
+        "subnetResId": {
+            "type": "string",
+            "value": "[variables('subnetResId')]"
         }
     }
 }
