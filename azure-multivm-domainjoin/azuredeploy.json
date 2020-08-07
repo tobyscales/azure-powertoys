@@ -144,7 +144,7 @@
         "virtualNetworkName": "[if(equals('default', parameters('virtualNetworkName')),concat('vn-', variables('baseName')),parameters('virtualNetworkName'))]",
         "subnetName": "[if(equals('default', parameters('subnetName')),concat('sn-', variables('baseName')),parameters('subnetName'))]",
         "gitHubOwner": "tescales",
-        "gitHubRepo": "azure-multivm-domainjoin", 
+        "gitHubRepo": "azure-powertoys/azure-multivm-domainjoin", 
         "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('virtualNetworkName'),variables('subnetName'))]",
         "remoteTemplate": "[if(contains(deployment().properties, 'templateLink'),bool('true'),bool('false'))]",
         "remoteUri": "[if(variables('remoteTemplate'), deployment().properties.templateLink.uri, concat('https://raw.githubusercontent.com/', variables('gitHubOwner'), '/', variables('gitHubRepo'), '/master/'))]",
