@@ -79,7 +79,7 @@
         },
         "subnetResId": {
             "type": "string",
-            "value": "[variables('subnetResId')]"
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('virtualNetworkName'),variables('subnetName'))]"
         }
     }
 }
