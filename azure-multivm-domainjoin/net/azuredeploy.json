@@ -45,9 +45,8 @@
             "location": "[parameters('location')]",
             "properties": {
                 "addressSpace": {
-                    "addressPrefixes": [
+                    "addressPrefixes": 
                         "[parameters('addressSpaces')]"
-                    ]
                 }
             }
         },
@@ -62,7 +61,7 @@
             ],
             "copy": {
                 "name": "subnetCopy",
-                "count": "[length(createarray(parameters('addressSpaces')))]"
+                "count": "[length(parameters('addressSpaces'))]"
             },
             "properties": {
                 "addressPrefix": "[parameters('addressSpaces')[copyIndex()]]"
