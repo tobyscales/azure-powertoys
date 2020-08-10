@@ -36,17 +36,21 @@
         "subnetResId": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('virtualNetworkName'),variables('subnetName'))]"
     },
     "resources": [
-
         {
-            "type": "Microsoft.Network/virtualNetworks",
-            "apiVersion": "2017-09-01",
-            "name": "[variables('virtualNetworkName')]",
+
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2019-09-01",
+            "name": "[concat(variables('virtualNetworkName'), '/', variables('subnetName'), copyIndex())]",
             "location": "[parameters('location')]",
+            "dependsOn": [
+                "[variables('virtualNetworkName')]"
+            ],
+            "copy": {
+                "name": "subnetCopy",
+                "count": "[length(parameters('addressSpaces'))]"
+            },
             "properties": {
-                "addressSpace": {
-                    "addressPrefixes": 
-                        "[skip(parameters('addressSpaces'),1)]"
-                }
+                "addressPrefix": "[parameters('addressSpaces')[copyIndex()]]"
             }
         }
     ],
