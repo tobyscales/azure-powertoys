@@ -49,6 +49,23 @@
                         "[parameters('addressSpaces')]"
                 }
             }
+        },
+        {
+
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2019-09-01",
+            "name": "[concat(variables('virtualNetworkName'), '/', variables('subnetName'), copyIndex())]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[variables('virtualNetworkName')]"
+            ],
+            "copy": {
+                "name": "subnetCopy",
+                "count": "[length(parameters('addressSpaces'))]"
+            },
+            "properties": {
+                "addressPrefix": "[parameters('addressSpaces')[copyIndex()]]"
+            }
         }
     ],
     "outputs": {
