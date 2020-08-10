@@ -38,7 +38,6 @@
     "resources": [
 
         {
-
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2017-09-01",
             "name": "[variables('virtualNetworkName')]",
@@ -46,7 +45,7 @@
             "properties": {
                 "addressSpace": {
                     "addressPrefixes": 
-                        "[parameters('addressSpaces')]"
+                        "[skip(parameters('addressSpaces'),1)]"
                 }
             }
         }
