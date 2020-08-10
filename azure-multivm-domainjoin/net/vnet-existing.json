@@ -42,9 +42,6 @@
             "apiVersion": "2019-09-01",
             "name": "[concat(variables('virtualNetworkName'), '/', variables('subnetName'), copyIndex())]",
             "location": "[parameters('location')]",
-            "dependsOn": [
-                "[variables('virtualNetworkName')]"
-            ],
             "copy": {
                 "name": "subnetCopy",
                 "count": "[length(parameters('addressSpaces'))]"
