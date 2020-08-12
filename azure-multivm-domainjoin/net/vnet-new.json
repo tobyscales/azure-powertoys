@@ -20,6 +20,16 @@
             },
             "defaultValue": [ "10.10.10.0/24" ]
         },
+        "subnets": {
+            "type": "array"
+        },
+        "addBastionSubnet": {
+            "type": "bool",
+            "metadata": {
+                "description": "Set to true to automatically postpend an AzureBastionSubnet address within the vnet address space."
+            },
+            "defaultValue": false
+        },
         "location": {
             "type": "string",
             "defaultValue": "[resourceGroup().location]",
@@ -33,7 +43,8 @@
         "virtualNetworkName": "[if(equals('default', parameters('virtualNetworkName')),concat('vn-', variables('baseName')),parameters('virtualNetworkName'))]",
         "subnetName": "[if(equals('default', parameters('subnetName')),concat('sn-', variables('baseName')),parameters('subnetName'))]",
         "virtualNetworkResId": "[resourceId('Microsoft.Network/virtualnetworks', variables('virtualNetworkName'))]",
-        "subnetResId": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('virtualNetworkName'),variables('subnetName'))]"
+        "subnetResId": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('virtualNetworkName'),variables('subnetName'))]",
+        "bastionSubnet": "[if(parameters('addBastionSubnet'), parameters('addressSpaces'), '0.0.0.0')]"
     },
     "resources": [
 
@@ -45,26 +56,24 @@
             "location": "[parameters('location')]",
             "properties": {
                 "addressSpace": {
-                    "addressPrefixes": 
-                        "[parameters('addressSpaces')]"
+                    "addressPrefixes": "[parameters('addressSpaces')]"
                 }
             }
         },
         {
-
             "type": "Microsoft.Network/virtualNetworks/subnets",
             "apiVersion": "2019-09-01",
-            "name": "[concat(variables('virtualNetworkName'), '/', variables('subnetName'), copyIndex())]",
+            "name": "[concat(variables('virtualNetworkName'), '/', parameters('subnets')[copyIndex()].name)]",
             "location": "[parameters('location')]",
             "dependsOn": [
                 "[variables('virtualNetworkName')]"
             ],
             "copy": {
                 "name": "subnetCopy",
-                "count": "[length(parameters('addressSpaces'))]"
+                "count": "[length(parameters('subnets'))]"
             },
             "properties": {
-                "addressPrefix": "[parameters('addressSpaces')[copyIndex()]]"
+                "addressPrefix": "[parameters('subnets')[copyIndex()].addressPrefix]"
             }
         }
     ],
