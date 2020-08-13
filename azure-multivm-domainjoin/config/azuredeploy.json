@@ -112,38 +112,7 @@
                 "autoUpgradeMinorVersion": true
             }
         },
-        {
-            "condition": "[not(empty(parameters('logonScriptUri')))]",
-            "apiVersion": "2018-06-01",
-            "type": "Microsoft.Compute/virtualMachines/extensions",
-            "name": "[concat(variables('virtualMachineName'),'/logonScript')]",
-            "location": "[parameters('location')]",
-            "properties": {
-                "publisher": "Microsoft.Compute",
-                "type": "CustomScriptExtension",
-                "typeHandlerVersion": "1.9",
-                "autoUpgradeMinorVersion": true,
-                "settings": {
-                    "commandToExecute": "[variables('psLogonCmd')]"
-                }
-            }
-        },
-        {
-            "condition": "[not(empty(parameters('startupScriptUri')))]",
-            "apiVersion": "2018-06-01",
-            "type": "Microsoft.Compute/virtualMachines/extensions",
-            "name": "[concat(variables('virtualMachineName'),'/startupScript')]",
-            "location": "[parameters('location')]",
-            "properties": {
-                "publisher": "Microsoft.Compute",
-                "type": "CustomScriptExtension",
-                "typeHandlerVersion": "1.9",
-                "autoUpgradeMinorVersion": true,
-                "settings": {
-                    "commandToExecute": "[variables('psStartupCmd')]"
-                }
-            }
-        },
+        
         {
             "condition": "[variables('doAutoShutdown')]",
             "name": "[concat('shutdown-computevm-',variables('virtualMachineName'))]",
