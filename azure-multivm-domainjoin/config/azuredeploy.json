@@ -1,0 +1,169 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "encryptVM": {
+            "type": "bool",
+            "metadata": {
+                "description": "Determines whether encryption is deployed to the VM."
+            },
+            "defaultValue": false
+        },
+        "useAADLogin": {
+            "type": "bool",
+            "metadata": {
+                "description": "Determines whether to use AAD to login to the VM."
+            },
+            "defaultValue": false
+        },
+        "keyVaultName": {
+            "type": "string",
+            "defaultValue": "[concat('kv-', resourcegroup().name)]"
+        },
+        "virtualMachineName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the virtual machine"
+            },
+            "defaultValue": "default"
+        },
+        "shutdownTimeZone": {
+            "type": "string",
+            "metadata": {
+                "description": "The Time Zone used for scheduling, long-form ('Pacific Standard Time')"
+            }
+        },
+        "shutdownTime": {
+            "type": "string",
+            "metadata": {
+                "description": "Enter time in 4-digit, 24-hour format (2000 = 8pm)"
+            }
+        },
+        "startupScriptUri": {
+            "type": "string",
+            "defaultValue": "default",
+            "metadata": {
+                "description": "By default, will automatically execute the file named startup.ps1 located under /scripts, relative to the deployment."
+            }
+        },
+        "logonScriptUri": {
+            "type": "string",
+            "defaultValue": "default",
+            "metadata": {
+                "description": "By default, will automatically execute the file named logon.ps1 located under /scripts, relative to the deployment."
+            }
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Location for all resources."
+            }
+        }
+    },
+    "variables": {
+        "baseName": "[take(replace(replace(replace(resourceGroup().name, ' ', ''),'-rg', ''), '_', '-'),12)]",
+        "virtualMachineName": "[if(equals('default', parameters('virtualMachineName')),concat('vm-', variables('baseName')),parameters('virtualMachineName'))]",
+        "encryptVMTemplateUrl": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/201-encrypt-running-windows-vm-without-aad/azuredeploy.json",
+        "startupScriptUri": "[if( equals(parameters('startupScriptUri'),'default'), concat(deployment().properties.templateLink.uri, '/scripts/startup.ps1'), parameters('startupScriptUri'))]",
+        "logonScriptUri": "[if( equals(parameters('logonScriptUri'),'default'), concat(deployment().properties.templateLink.uri, '/scripts/logon.ps1'), parameters('logonScriptUri'))]",
+        "psInvoke": "powershell.exe -noprofile -windowstyle hidden -executionpolicy unrestricted",
+        "psIwrCmd": "[concat ('invoke-webrequest -usebasicparsing ', variables('logonScriptUri'), ' | new-item \"C:\\WindowsAzure\\logon.ps1', '\" -force')]",
+        "psAutoLogonCmd": "[concat ('$regKey=''', variables('psInvoke'), ' -file C:\\WindowsAzure\\logon.ps1', '''; new-itemproperty -path \"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\" -name AzureLogonScript -Force -Value $regKey')]",
+        "psLogonCmd": "[concat(variables('psInvoke'), ' \"', variables('psIwrcmd'), '\"; ', variables('psInvoke'), ' -command \"{', variables('psAutoLogonCmd'), '}\"')]",
+        "psStartupCmd": "[concat('invoke-webrequest -usebasicparsing ', variables('startupScriptUri'), ' | ', variables('psInvoke'))]",
+        "doAutoShutdown": "[if(not(empty(parameters('shutdownTime')) ), bool('true'), bool('false'))]"
+    },
+    "resources": [
+        {
+            "name": "[concat('Encrypt_', variables('virtualMachineName'))]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2015-01-01",
+            "condition": "[parameters('encryptVM')]",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('encryptVMTemplateUrl')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "vmName": {
+                        "value": "[variables('virtualMachineName')]"
+                    },
+                    "keyVaultName": {
+                        "value": "[parameters('keyVaultName')]"
+                    },
+                    "keyVaultResourceGroup": {
+                        "value": "[resourceGroup().name]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "apiVersion": "2017-03-30",
+            "name": "[concat(variables('virtualMachineName'),'/AADLoginForWindows')]",
+            "condition": "[parameters('useAADLogin')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "publisher": "Microsoft.Azure.ActiveDirectory",
+                "type": "AADLoginForWindows",
+                "typeHandlerVersion": "0.4",
+                "autoUpgradeMinorVersion": true
+            }
+        },
+        {
+            "condition": "[not(empty(parameters('logonScriptUri')))]",
+            "apiVersion": "2018-06-01",
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(variables('virtualMachineName'),'/logonScript')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "publisher": "Microsoft.Compute",
+                "type": "CustomScriptExtension",
+                "typeHandlerVersion": "1.9",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "commandToExecute": "[variables('psLogonCmd')]"
+                }
+            }
+        },
+        {
+            "condition": "[not(empty(parameters('startupScriptUri')))]",
+            "apiVersion": "2018-06-01",
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(variables('virtualMachineName'),'/startupScript')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "publisher": "Microsoft.Compute",
+                "type": "CustomScriptExtension",
+                "typeHandlerVersion": "1.9",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "commandToExecute": "[variables('psStartupCmd')]"
+                }
+            }
+        },
+        {
+            "condition": "[variables('doAutoShutdown')]",
+            "name": "[concat('shutdown-computevm-',variables('virtualMachineName'))]",
+            "type": "Microsoft.DevTestLab/schedules",
+            "apiVersion": "2016-05-15",
+            "location": "[parameters('location')]",
+            "properties": {
+                "status": "Enabled",
+                "timeZoneId": "[parameters('shutdownTimeZone')]",
+                "taskType": "ComputeVmShutdownTask",
+                "notificationSettings": {
+                    "status": "Disabled",
+                    "timeInMinutes": 15,
+                    "webhookUrl": null
+                },
+                "targetResourceId": "[resourceId('Microsoft.Compute/VirtualMachines',variables('virtualMachineName'))]",
+                "dailyRecurrence": {
+                    "time": "[parameters('shutdownTime')]"
+                }
+            }
+        }
+    ]
+}
