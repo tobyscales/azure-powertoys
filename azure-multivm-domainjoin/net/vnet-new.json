@@ -20,6 +20,10 @@
             },
             "defaultValue": [ "10.10.10.0/24" ]
         },
+        "subnetCount": {
+            "type": "int",
+            "defaultValue": 3
+        },
         "subnets": {
             "type": "array"
         },
@@ -44,12 +48,39 @@
         "subnetName": "[if(equals('default', parameters('subnetName')),concat('sn-', variables('baseName')),parameters('subnetName'))]",
         "virtualNetworkResId": "[resourceId('Microsoft.Network/virtualnetworks', variables('virtualNetworkName'))]",
         "subnetResId": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('virtualNetworkName'),variables('subnetName'))]",
-        "bastionSubnet": "[if(parameters('addBastionSubnet'), parameters('addressSpaces'), '0.0.0.0')]"
+        "bastionSubnet": "[if(parameters('addBastionSubnet'), parameters('addressSpaces'), '0.0.0.0')]",
+        "subnetSlicing": {
+            "1": [ "0/24" ],
+            "2": [ "0/25", "128/25" ],
+            "3": [ "0/26", "64/26", "128/26" ],
+            "4": [ "0/26", "64/26", "128/26", "192/26" ],
+            "5": [ "0/27", "32/27", "64/27", "128/27", "160/27" ],
+            "6": [ "0/27", "32/27", "64/27", "128/27", "160/27", "192/27" ]
+        },
+        "copy": [
+            {
+                "name": "subnetPrefixes",
+                "count": "[parameters('subnetCount')]",
+                "input": "[concat(variables('subnetBase'),variables('subnetSlicing')[add(parameters('subnetCount'),1)])]"
+            }
+        ],
+        "subnetBase": "[take(parameters('addressSpaces')[0],lastIndexOf(parameters('addressSpaces')[0],'.'))]",
+        "subnets": {
+            "copy": [
+                {
+                    "count": "[parameters('subnetCount')]",
+                    "input": {
+                        "name": "[concat(variables('subnetName'), copyIndex('subnets', 1))]",
+                        "properties": {
+                            "addressPrefix": "[variables('subnetPrefixes')[copyIndex('subnets')]]"
+                        }
+                    }
+                }
+            ]
+        }
     },
     "resources": [
-
         {
-
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2017-09-01",
             "name": "[variables('virtualNetworkName')]",
