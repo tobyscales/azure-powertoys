@@ -18,14 +18,11 @@
             "metadata": {
                 "description": "Address Space for the Virtual Network. Only used if vnet does not exist."
             },
-            "defaultValue": [ "10.10.10.0/24" ]
+            "defaultValue": [ "10.10.11.0/24", "10.10.10.0/24" ]
         },
         "subnetCount": {
             "type": "int",
             "defaultValue": 3
-        },
-        "subnets": {
-            "type": "array"
         },
         "addBastionSubnet": {
             "type": "bool",
@@ -43,31 +40,36 @@
         }
     },
     "variables": {
-        "baseName": "[take(replace(replace(resourceGroup().name, ' ', ''), '_', '-'),23)]",
+        "baseName": "[take(replace(replace(replace(resourceGroup().name, ' ', ''),'-rg', ''), '_', '-'),23)]",
         "virtualNetworkName": "[if(equals('default', parameters('virtualNetworkName')),concat('vn-', variables('baseName')),parameters('virtualNetworkName'))]",
         "subnetName": "[if(equals('default', parameters('subnetName')),concat('sn-', variables('baseName')),parameters('subnetName'))]",
         "virtualNetworkResId": "[resourceId('Microsoft.Network/virtualnetworks', variables('virtualNetworkName'))]",
         "subnetResId": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('virtualNetworkName'),variables('subnetName'))]",
-        "bastionSubnet": "[if(parameters('addBastionSubnet'), parameters('addressSpaces'), '0.0.0.0')]",
-        "subnetSlicing": {
-            "1": [ "0/24" ],
-            "2": [ "0/25", "128/25" ],
-            "3": [ "0/26", "64/26", "128/26" ],
-            "4": [ "0/26", "64/26", "128/26", "192/26" ],
-            "5": [ "0/27", "32/27", "64/27", "128/27", "160/27" ],
-            "6": [ "0/27", "32/27", "64/27", "128/27", "160/27", "192/27" ]
-        },
+        "subnetCount": "[if(parameters('addBastionSubnet'), add(parameters('subnetCount'), 1), parameters('subnetCount'))]",
+        "subnetSlicing": [
+            [ "0/24" ],
+            [ "0/25", "128/25" ],
+            [ "0/26", "128/26", "192/26" ],
+            [ "0/26", "64/26", "128/26", "192/26" ],
+            [ "0/27", "32/27", "64/27", "128/27", "160/27" ],
+            [ "0/27", "32/27", "64/27", "128/27", "160/27", "192/27" ]
+        ],
+        "strAddressSpace": "[string(parameters('addressSpaces')[0])]",
+        "subnetBase": "[take(variables('strAddressSpace'), lastIndexOf(variables('strAddressSpace'),'.'))]",
         "copy": [
             {
                 "name": "subnetPrefixes",
-                "count": "[parameters('subnetCount')]",
-                "input": "[concat(variables('subnetBase'),variables('subnetSlicing')[add(parameters('subnetCount'),1)])]"
+                "count": "[variables('subnetCount')]",
+                "input": "[concat(variables('subnetBase'),'.',replace(replace(string(variables('subnetSlicing')[variables('subnetCount')][copyIndex('subnetPrefixes')]),'[',''),'\"',''))]"
             }
         ],
-        "subnetBase": "[take(parameters('addressSpaces')[0],lastIndexOf(parameters('addressSpaces')[0],'.'))]",
-        "subnets": {
+        "vNetProperties": {
+            "addressSpace": {
+                "addressPrefixes": "[parameters('addressSpaces')]"
+            },
             "copy": [
                 {
+                    "name": "subnets",
                     "count": "[parameters('subnetCount')]",
                     "input": {
                         "name": "[concat(variables('subnetName'), copyIndex('subnets', 1))]",
@@ -85,26 +87,19 @@
             "apiVersion": "2017-09-01",
             "name": "[variables('virtualNetworkName')]",
             "location": "[parameters('location')]",
-            "properties": {
-                "addressSpace": {
-                    "addressPrefixes": "[parameters('addressSpaces')]"
-                }
-            }
+            "properties": "[variables('vNetProperties')]"
         },
         {
+            "condition": "[parameters('addBastionSubnet')]",
             "type": "Microsoft.Network/virtualNetworks/subnets",
             "apiVersion": "2019-09-01",
-            "name": "[concat(variables('virtualNetworkName'), '/', parameters('subnets')[copyIndex()].name)]",
+            "name": "[concat(variables('virtualNetworkName'), '/', 'AzureBastionSubnet')]",
             "location": "[parameters('location')]",
             "dependsOn": [
                 "[variables('virtualNetworkName')]"
             ],
-            "copy": {
-                "name": "subnetCopy",
-                "count": "[length(parameters('subnets'))]"
-            },
             "properties": {
-                "addressPrefix": "[parameters('subnets')[copyIndex()].addressPrefix]"
+                "addressPrefix": "[variables('subnetPrefixes')[parameters('subnetCount')]]"
             }
         }
     ],
@@ -112,6 +107,10 @@
         "vNetResId": {
             "type": "string",
             "value": "[variables('virtualNetworkResId')]"
+        },
+        "subnetBase": {
+            "type": "string",
+            "value": "[variables('subnetBase')]"
         },
         "vNetName": {
             "type": "string",
