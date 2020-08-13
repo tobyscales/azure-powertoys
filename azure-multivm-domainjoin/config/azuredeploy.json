@@ -31,13 +31,15 @@
             "type": "string",
             "metadata": {
                 "description": "The Time Zone used for scheduling, long-form ('Pacific Standard Time')"
-            }
+            },
+            "defaultValue": "Pacific Standard Time"
         },
         "shutdownTime": {
             "type": "string",
             "metadata": {
                 "description": "Enter time in 4-digit, 24-hour format (2000 = 8pm)"
-            }
+            },
+            "defaultValue": "2000"
         },
         "startupScriptUri": {
             "type": "string",
@@ -75,6 +77,16 @@
         "doAutoShutdown": "[if(not(empty(parameters('shutdownTime')) ), bool('true'), bool('false'))]"
     },
     "resources": [
-       
-    ]
+        
+    ],
+    "outputs": {
+        "psLogonCmd": {
+            "type": "string",
+            "value": "[variables('psLogonCmd')]"
+        },
+        "doAutoShutdown": {
+            "type": "bool",
+            "value": "[variables('doAutoShutdown')]"
+        }
+    }
 }
