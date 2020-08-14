@@ -77,7 +77,97 @@
         "doAutoShutdown": "[if(not(empty(parameters('shutdownTime')) ), bool('true'), bool('false'))]"
     },
     "resources": [
-        
+         {
+            "name": "[concat('Encrypt_', variables('virtualMachineName'))]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2015-01-01",
+            "condition": "[parameters('encryptVM')]",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('encryptVMTemplateUrl')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "vmName": {
+                        "value": "[variables('virtualMachineName')]"
+                    },
+                    "keyVaultName": {
+                        "value": "[parameters('keyVaultName')]"
+                    },
+                    "keyVaultResourceGroup": {
+                        "value": "[resourceGroup().name]"
+                    }
+                }
+            }
+        },
+
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "apiVersion": "2017-03-30",
+            "name": "[concat(variables('virtualMachineName'),'/AADLoginForWindows')]",
+            "condition": "[parameters('useAADLogin')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "publisher": "Microsoft.Azure.ActiveDirectory",
+                "type": "AADLoginForWindows",
+                "typeHandlerVersion": "0.4",
+                "autoUpgradeMinorVersion": true
+            }
+        },
+        {
+            "condition": "[not(empty(parameters('logonScriptUri')))]",
+            "apiVersion": "2018-06-01",
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(variables('virtualMachineName'),'/logonScript')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "publisher": "Microsoft.Compute",
+                "type": "CustomScriptExtension",
+                "typeHandlerVersion": "1.9",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "commandToExecute": "[variables('psLogonCmd')]"
+                }
+            }
+        },
+        {
+            "condition": "[not(empty(parameters('startupScriptUri')))]",
+            "apiVersion": "2018-06-01",
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(variables('virtualMachineName'),'/startupScript')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "publisher": "Microsoft.Compute",
+                "type": "CustomScriptExtension",
+                "typeHandlerVersion": "1.9",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "commandToExecute": "[variables('psStartupCmd')]"
+                }
+            }
+        },
+        {
+            "condition": "[variables('doAutoShutdown')]",
+            "name": "[concat('shutdown-computevm-',variables('virtualMachineName'))]",
+            "type": "Microsoft.DevTestLab/schedules",
+            "apiVersion": "2016-05-15",
+            "location": "[parameters('location')]",
+            "properties": {
+                "status": "Enabled",
+                "timeZoneId": "[parameters('shutdownTimeZone')]",
+                "taskType": "ComputeVmShutdownTask",
+                "notificationSettings": {
+                    "status": "Disabled",
+                    "timeInMinutes": 15,
+                    "webhookUrl": null
+                },
+                "targetResourceId": "[resourceId('Microsoft.Compute/VirtualMachines',variables('virtualMachineName'))]",
+                "dailyRecurrence": {
+                    "time": "[parameters('shutdownTime')]"
+                }
+            }
+        }
     ],
     "outputs": {
         "psLogonCmd": {
