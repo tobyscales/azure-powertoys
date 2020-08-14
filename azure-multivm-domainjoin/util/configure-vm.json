@@ -103,7 +103,8 @@
         "psLogonCmd": "[concat(variables('psInvoke'), ' \"', variables('psIwrcmd'), '\"; ', variables('psInvoke'), ' -command \"{', variables('psAutoLogonCmd'), '}\"')]",
         "psStartupCmd": "[concat('invoke-webrequest -usebasicparsing ', variables('startupScriptUri'), ' | ', variables('psInvoke'))]",
         "doAutoShutdown": "[if(not(empty(parameters('shutdownTime')) ), bool('true'), bool('false'))]",
-        "domainJoinOptions": 3
+        "domainJoinOptions": 3,
+        "willJoinDomain": "[if(equals(parameters('joinDomain'),'no'), bool('false'), bool('true'))]"
     },
     "resources": [
         {
@@ -131,7 +132,7 @@
             }
         },
         {
-            "condition": "[not(equals(parameters('joinDomain'),'no'))]",
+            "condition": "[variables('willJoinDomain')]",
             "apiVersion": "2015-06-15",
             "type": "Microsoft.Compute/virtualMachines/extensions",
             "name": "[concat(variables('virtualMachineName'), '/joindomain')]",
@@ -174,7 +175,9 @@
             "name": "[concat(variables('virtualMachineName'),'/logonScript')]",
             "location": "[parameters('location')]",
             "dependsOn": [
-                "[concat(variables('virtualMachineName'), '/joindomain')]"
+                                "[if(not(empty(resourceId('Microsoft.Compute/virtualMachines/extensions', variables('virtualMachineName'), '/joinDomain'))), resourceId('Microsoft.Compute/virtualMachines/extensions', variables('virtualMachineName'), '/joinDomain'), json('null'))]",
+                "[if(not(variables('willJoinDomain')), resourceId('Microsoft.Compute/virtualMachines/extensions', variables('virtualMachineName'), '/joinDomain'), json('null'))]",
+                "[if(variables('willJoinDomain'), resourceId('Microsoft.Compute/virtualMachines/extensions', variables('virtualMachineName'), '/joinDomain'), json('null'))]"
             ],
             "properties": {
                 "publisher": "Microsoft.Compute",
@@ -183,25 +186,6 @@
                 "autoUpgradeMinorVersion": true,
                 "settings": {
                     "commandToExecute": "[variables('psLogonCmd')]"
-                }
-            }
-        },
-        {
-            "condition": "[not(empty(parameters('startupScriptUri')))]",
-            "apiVersion": "2018-06-01",
-            "type": "Microsoft.Compute/virtualMachines/extensions",
-            "name": "[concat(variables('virtualMachineName'),'/startupScript')]",
-            "location": "[parameters('location')]",
-            "dependsOn": [
-                "[concat(variables('virtualMachineName'), '/joindomain')]"
-            ],
-            "properties": {
-                "publisher": "Microsoft.Compute",
-                "type": "CustomScriptExtension",
-                "typeHandlerVersion": "1.9",
-                "autoUpgradeMinorVersion": true,
-                "settings": {
-                    "commandToExecute": "[variables('psStartupCmd')]"
                 }
             }
         },

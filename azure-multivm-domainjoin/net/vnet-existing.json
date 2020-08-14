@@ -109,6 +109,10 @@
         "subnetResId": {
             "type": "string",
             "value": "[variables('subnetResId')]"
+        },
+        "allSubnets": {
+            "type": "object",
+            "value": "[variables('vNetProperties').subnets]"
         }
     }
 }
