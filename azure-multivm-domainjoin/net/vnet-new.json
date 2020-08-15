@@ -37,6 +37,10 @@
             "metadata": {
                 "description": "Location for all resources."
             }
+        },
+        "debugOutput": {
+            "type": "bool",
+            "defaultValue": false
         }
     },
     "variables": {
@@ -83,7 +87,7 @@
     },
     "resources": [
         {
-            "condition": "[if(empty(resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))), bool('true'), bool('false'))]",
+            "condition": "[and(if(empty(resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))), bool('true'), bool('false')), not(parameters('debugOutput')))]",
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2017-09-01",
             "name": "[variables('virtualNetworkName')]",
@@ -91,7 +95,7 @@
             "properties": "[variables('vNetProperties')]"
         },
         {
-            "condition": "[parameters('addBastionSubnet')]",
+            "condition": "[and(parameters('addBastionSubnet'), not(parameters('debugOutput')))]",
             "type": "Microsoft.Network/virtualNetworks/subnets",
             "apiVersion": "2019-09-01",
             "name": "[concat(variables('virtualNetworkName'), '/', 'AzureBastionSubnet')]",
@@ -117,9 +121,19 @@
             "type": "string",
             "value": "[variables('virtualNetworkName')]"
         },
-        "subnetResId": {
-            "type": "string",
-            "value": "[variables('subnetResId')]"
+        "subnetNames": {
+            "type": "array",
+            "copy": {
+                "count": "[length(variables('vNetProperties').subnets)]",
+                "input": "[variables('vNetProperties').subnets[copyIndex()].name]"
+            }
+        },
+        "subnetIDs": {
+            "type": "array",
+            "copy": {
+                "count": "[length(variables('vNetProperties').subnets)]",
+                "input": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('vNetProperties').subnets[copyIndex()].name)]"
+            }
         },
         "allSubnets": {
             "type": "array",
