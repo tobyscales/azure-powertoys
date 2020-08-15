@@ -83,6 +83,7 @@
     },
     "resources": [
         {
+            "condition": "[if(empty(resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))), bool('true'), bool('false'))]",
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2017-09-01",
             "name": "[variables('virtualNetworkName')]",
