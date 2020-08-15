@@ -101,7 +101,7 @@
             "name": "[concat(variables('virtualNetworkName'), '/', 'AzureBastionSubnet')]",
             "location": "[parameters('location')]",
             "dependsOn": [
-                "[variables('virtualNetworkName')]"
+                "[variables('virtualNetworkResId')]"
             ],
             "properties": {
                 "addressPrefix": "[variables('subnetPrefixes')[parameters('subnetCount')]]"
