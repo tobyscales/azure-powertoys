@@ -122,7 +122,7 @@
         },
         "allSubnets": {
             "type": "object",
-            "value": "[variables('vNetProperties').subnets]"
+            "value": "[variables('vNetProperties')]"
         }
     }
 }
