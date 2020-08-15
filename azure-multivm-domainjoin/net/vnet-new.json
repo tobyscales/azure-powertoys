@@ -87,7 +87,7 @@
     },
     "resources": [
         {
-            "condition": "[variables('deployVnet')]",
+            
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2017-09-01",
             "name": "[variables('virtualNetworkName')]",
@@ -101,7 +101,7 @@
             "name": "[concat(variables('virtualNetworkName'), '/', 'AzureBastionSubnet')]",
             "location": "[parameters('location')]",
             "dependsOn": [
-                "[variables('virtualNetworkResId')]"
+                "[variables('virtualNetworkName')]"
             ],
             "properties": {
                 "addressPrefix": "[variables('subnetPrefixes')[parameters('subnetCount')]]"
