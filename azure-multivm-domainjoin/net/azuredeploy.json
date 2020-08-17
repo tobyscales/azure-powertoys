@@ -48,7 +48,6 @@
         "virtualNetworkName": "[if(equals('default', parameters('virtualNetworkName')),concat('vn-', variables('baseName')),parameters('virtualNetworkName'))]",
         "subnetName": "[if(equals('default', parameters('subnetName')),concat('sn-', variables('baseName')),parameters('subnetName'))]",
         "virtualNetworkResId": "[resourceId('Microsoft.Network/virtualnetworks', variables('virtualNetworkName'))]",
-        "deployVnet": "[if(empty(variables('virtualNetworkResId')), bool('true'), bool('false'))]",
         "subnetCount": "[if(parameters('addBastionSubnet'), add(parameters('subnetCount'), 1), parameters('subnetCount'))]",
         "subnetSlicing": [
             [ "0/24" ],
@@ -87,6 +86,7 @@
     },
     "resources": [
         {
+            "condition": "[not(parameters('debugOutput'))]",
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2017-09-01",
             "name": "[variables('virtualNetworkName')]",
