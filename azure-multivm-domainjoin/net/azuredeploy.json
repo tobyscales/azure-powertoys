@@ -87,7 +87,6 @@
     },
     "resources": [
         {
-            "condition": "[variables('deployVnet')]",
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2017-09-01",
             "name": "[variables('virtualNetworkName')]",
